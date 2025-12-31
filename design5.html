@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Plexus - Quote Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css');
+
+        body {
+            font-family: 'Wanted Sans', 'Wanted Sans Variable', -apple-system, sans-serif;
+            font-weight: 500;
+            background-color: #0b1120;
+            color: #fff;
+            overflow: hidden;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body class="w-full h-screen flex flex-col md:flex-row">
+
+    <!-- Left: Three.js Canvas -->
+    <div id="canvasContainer" class="relative w-full md:w-[60%] h-[50vh] md:h-full bg-[#050914] overflow-hidden">
+        <div id="loadingOverlay"
+            class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 text-white/50">
+            <div class="bg-black/80 px-4 py-2 rounded flex flex-col items-center gap-2">
+                <div class="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
+                <span class="text-xs" id="statusMsg">Init...</span>
+            </div>
+        </div>
+        <div id="debugInfo"
+            class="absolute bottom-2 left-2 text-[10px] text-gray-700 font-mono z-30 pointer-events-none"></div>
+
+        <!-- Control Panel -->
+        <div id="controlPanel"
+            class="absolute bottom-3 right-3 z-30 flex flex-col gap-2.5 bg-black/50 p-4 rounded-lg border border-white/10"
+            style="min-width: 160px;">
+            <div class="flex gap-2 items-center justify-center">
+                <button id="pauseBtn" title="Pause/Play"
+                    class="p-2 bg-white/10 hover:bg-white/20 text-white rounded border border-white/20 transition-all"><i
+                        data-lucide="pause" class="w-4 h-4"></i></button>
+                <button id="colorBtn" title="Random Color"
+                    class="p-2 bg-white/10 hover:bg-white/20 text-white rounded border border-white/20 transition-all"><i
+                        data-lucide="palette" class="w-4 h-4"></i></button>
+            </div>
+            <div class="flex gap-2 items-center text-white/70" title="Scale Size">
+                <i data-lucide="maximize" class="w-4 h-4 shrink-0"></i>
+                <input type="range" id="sizeRange" min="50" max="150" value="100" class="flex-1 h-1.5 accent-blue-400">
+            </div>
+            <div class="flex gap-2 items-center text-white/70" title="Point Density">
+                <i data-lucide="grid-3x3" class="w-4 h-4 shrink-0"></i>
+                <input type="range" id="densityRange" min="50" max="150" value="100"
+                    class="flex-1 h-1.5 accent-blue-400">
+            </div>
+            <div class="flex gap-2 items-center text-white/70" title="Point Size">
+                <i data-lucide="circle-dot" class="w-4 h-4 shrink-0"></i>
+                <input type="range" id="pointSizeRange" min="1" max="8" value="3" class="flex-1 h-1.5 accent-blue-400">
+            </div>
+            <div class="flex gap-2 items-center text-white/70" title="Line Opacity">
+                <i data-lucide="git-branch" class="w-4 h-4 shrink-0"></i>
+                <input type="range" id="lineOpacityRange" min="0" max="100" value="30"
+                    class="flex-1 h-1.5 accent-blue-400">
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Text Content -->
+    <div
+        class="w-full md:w-[40%] h-[50vh] md:h-full bg-slate-900/50 backdrop-blur-sm border-l border-white/5 flex flex-col relative z-10 text-slate-200">
+        <header class="p-6 flex justify-between items-center border-b border-white/5">
+            <a href="index.html"
+                class="text-xs font-bold tracking-[0.2em] uppercase hover:text-white transition-colors">
+                &larr; Exit
+            </a>
+            <button id="langBtn"
+                class="text-xs font-bold tracking-widest px-3 py-1 border border-white/10 rounded-full hover:bg-white hover:text-black transition-all">
+                KR
+            </button>
+        </header>
+
+        <main class="flex-grow flex flex-col justify-center px-8 md:px-12 overflow-y-auto">
+            <div id="quoteContent" class="opacity-0 translate-y-4 transition-all duration-700">
+                <h1 id="mainText"
+                    class="text-3xl md:text-4xl lg:text-5xl mb-6 font-medium leading-[1.3] text-white break-keep"
+                    style="line-height: 1.3 !important;"></h1>
+                <div class="h-px w-12 bg-blue-500/50 mb-6"></div>
+                <p id="subText" class="text-lg text-slate-400 mb-8 font-light italic leading-relaxed"></p>
+                <div class="mt-4">
+                    <p id="mainAuthor" class="text-xl text-white font-bold tracking-wide"></p>
+                    <p id="subAuthor" class="text-xs text-slate-500 uppercase mt-1 tracking-widest"></p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="p-6 border-t border-white/5 bg-slate-900/80">
+            <button id="nextBtn"
+                class="w-full py-4 bg-white/5 hover:bg-white/10 text-white text-sm tracking-[0.2em] uppercase transition-all border border-white/10 hover:border-white/30">
+                Generate Next
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        // State
+        let currentQuote = null;
+        let lang = 'ko';
+        let isRotating = true;
+        let currentColor = 0x88ccff;
+        let currentScale = 1.0;
+        let currentDensity = 1.0;
+        let currentPointSize = 3;
+        let currentLineOpacity = 0.3;
+
+        // Three.js
+        let scene, camera, renderer, group;
+
+        // DOM
+        const container = document.getElementById('canvasContainer');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const statusMsg = document.getElementById('statusMsg');
+        const debugInfo = document.getElementById('debugInfo');
+        const quoteContent = document.getElementById('quoteContent');
+        const mainText = document.getElementById('mainText');
+        const subText = document.getElementById('subText');
+        const mainAuthor = document.getElementById('mainAuthor');
+        const subAuthor = document.getElementById('subAuthor');
+        const langBtn = document.getElementById('langBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        function initThree() {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            // debugInfo.textContent = `View: ${w}x${h}`;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050914);
+
+            camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 1000);
+            camera.position.z = 300;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.domElement.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;z-index:0';
+            container.appendChild(renderer.domElement);
+
+            group = new THREE.Group();
+            scene.add(group);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (group && isRotating) group.rotation.y += 0.005;
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        function onResize() {
+            if (!camera) return;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            // debugInfo.textContent = `View: ${w}x${h}`;
+        }
+
+        function clearGroup() {
+            if (!group) return;
+            while (group.children.length > 0) {
+                const obj = group.children[0];
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+                group.remove(obj);
+            }
+        }
+
+        function getRandomColor() {
+            const colors = [0x88ccff, 0xff88cc, 0x88ffcc, 0xffcc88, 0xcc88ff, 0xccff88, 0xff8888, 0x88ff88, 0x8888ff];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function createPlexus(vertices) {
+            // currentColor = getRandomColor(); // Removed to prevent color change on rebuild
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            const mat = new THREE.PointsMaterial({ color: currentColor, size: currentPointSize, transparent: true, opacity: 1.0 });
+            group.add(new THREE.Points(geo, mat));
+
+            const lines = [];
+            const N = vertices.length / 3;
+            const useProximity = N < 1200;
+            const maxDist = 1024; // 20% 좁힘 (1600 -> 1280 -> 1024)
+
+            if (useProximity) {
+                for (let i = 0; i < N; i++) {
+                    const x1 = vertices[i * 3], y1 = vertices[i * 3 + 1], z1 = vertices[i * 3 + 2];
+                    for (let j = i + 1; j < N; j++) {
+                        const x2 = vertices[j * 3], y2 = vertices[j * 3 + 1], z2 = vertices[j * 3 + 2];
+                        const d = (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2;
+                        if (d < maxDist) lines.push(x1, y1, z1, x2, y2, z2);
+                    }
+                }
+            } else {
+                for (let i = 0; i < N; i++) {
+                    if (Math.random() > 0.9) {
+                        const j = Math.floor(Math.random() * N);
+                        lines.push(vertices[i * 3], vertices[i * 3 + 1], vertices[i * 3 + 2]);
+                        lines.push(vertices[j * 3], vertices[j * 3 + 1], vertices[j * 3 + 2]);
+                    }
+                }
+            }
+
+            if (lines.length > 0) {
+                const lGeo = new THREE.BufferGeometry();
+                lGeo.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
+                const lMat = new THREE.LineBasicMaterial({ color: currentColor, opacity: currentLineOpacity, transparent: true });
+                group.add(new THREE.LineSegments(lGeo, lMat));
+            }
+
+            const box = new THREE.Box3().setFromObject(group);
+            const center = box.getCenter(new THREE.Vector3());
+            group.position.sub(center);
+
+            // debugInfo.textContent += ` | Pts: ${Math.floor(N)}`;
+        }
+
+        function createFallbackPlexus() {
+            // debugInfo.textContent += " | Fallback";
+            const vertices = [];
+            for (let i = 0; i < 800; i++) {
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const r = 120;
+                vertices.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+            }
+            createPlexus(vertices);
+        }
+
+        function createTextPlexus(text) {
+            // 이름을 성/이름으로 분리해서 2줄로
+            const parts = text.trim().split(' ');
+            let line1, line2;
+            if (parts.length >= 2) {
+                line1 = parts.slice(0, -1).join(' '); // 이름
+                line2 = parts[parts.length - 1];      // 성
+            } else {
+                line1 = text;
+                line2 = '';
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const fontSize = 48; // 20% 축소 (60 -> 48)
+            ctx.font = `bold ${fontSize}px Arial`;
+
+            const w1 = ctx.measureText(line1).width;
+            const w2 = ctx.measureText(line2).width;
+            const maxWidth = Math.max(w1, w2);
+
+            canvas.width = Math.ceil(maxWidth) + 20;
+            canvas.height = line2 ? fontSize * 2 + 30 : fontSize + 20;
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.textBaseline = 'middle';
+
+            // 2줄 중앙 정렬
+            if (line2) {
+                ctx.fillText(line1, (canvas.width - w1) / 2, fontSize / 2 + 10);
+                ctx.fillText(line2, (canvas.width - w2) / 2, fontSize * 1.5 + 20);
+            } else {
+                ctx.fillText(line1, 10, canvas.height / 2);
+            }
+
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            const vertices = [];
+            const step = 1.6 / currentDensity; // 밀도 조절 적용
+
+            for (let y = 0; y < canvas.height; y += step) {
+                for (let x = 0; x < canvas.width; x += step) {
+                    const i = (Math.floor(y) * canvas.width + Math.floor(x)) * 4;
+                    const brightness = data[i];
+
+                    if (brightness > 128) {
+                        const px = (x - canvas.width / 2) * 2.0;
+                        const py = -(y - canvas.height / 2) * 2.0;
+                        const pz = (Math.random() - 0.5) * 24;
+                        vertices.push(px, py, pz);
+                    }
+                }
+            }
+
+            if (vertices.length > 10) {
+                createPlexus(vertices);
+            } else {
+                createFallbackPlexus();
+            }
+        }
+
+        function cleanText(text) {
+            return text ? text.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\uFFFD/g, "'") : "";
+        }
+
+        function updateUI() {
+            if (!currentQuote) return;
+
+            const q = currentQuote;
+            const isKo = lang === 'ko';
+
+            mainText.textContent = cleanText(isKo ? (q.ko_q || q.q) : q.q);
+            subText.textContent = cleanText(isKo ? q.q : (q.ko_q || ""));
+            subText.style.display = q.ko_q ? 'block' : 'none';
+            mainAuthor.textContent = isKo ? (q.author_ko || q.a) : q.a;
+            subAuthor.textContent = isKo ? q.a : (q.author_ko || "");
+
+            langBtn.textContent = isKo ? 'KR' : 'EN';
+
+            quoteContent.classList.remove('opacity-0', 'translate-y-4');
+            loadingOverlay.style.display = 'none';
+        }
+
+        async function loadQuote() {
+            loadingOverlay.style.display = 'flex';
+            statusMsg.textContent = "Loading...";
+            quoteContent.classList.add('opacity-0', 'translate-y-4');
+            clearGroup();
+            currentColor = getRandomColor(); // New color for new quote
+
+            try {
+                const res = await fetch('api.php');
+                currentQuote = await res.json();
+
+                // 영어 이름으로 텍스트 plexus 생성
+                const authorName = currentQuote.a || "Unknown";
+                statusMsg.textContent = "Processing...";
+                createTextPlexus(authorName);
+            } catch (e) {
+                console.error("Error", e);
+                createFallbackPlexus();
+            }
+
+            updateUI();
+        }
+
+        function toggleLang() {
+            lang = lang === 'ko' ? 'en' : 'ko';
+            updateUI();
+        }
+
+        const pauseBtn = document.getElementById('pauseBtn');
+        const colorBtn = document.getElementById('colorBtn');
+        const sizeRange = document.getElementById('sizeRange');
+        const densityRange = document.getElementById('densityRange');
+        const pointSizeRange = document.getElementById('pointSizeRange');
+        const lineOpacityRange = document.getElementById('lineOpacityRange');
+
+        function togglePause() {
+            isRotating = !isRotating;
+            pauseBtn.innerHTML = isRotating ? '<i data-lucide="pause" class="w-4 h-4"></i>' : '<i data-lucide="play" class="w-4 h-4"></i>';
+            lucide.createIcons();
+        }
+
+        function randomizeColor() {
+            currentColor = getRandomColor();
+            updateMaterials();
+        }
+
+        function updateMaterials() {
+            if (!group) return;
+            group.children.forEach(child => {
+                if (child.material) {
+                    child.material.color.setHex(currentColor);
+                    if (child.type === 'Points') {
+                        child.material.size = currentPointSize;
+                    }
+                    if (child.type === 'LineSegments') {
+                        child.material.opacity = currentLineOpacity;
+                    }
+                }
+            });
+        }
+
+        function updateScale() {
+            if (!group) return;
+            const scale = sizeRange.value / 100;
+            group.scale.set(scale, scale, scale);
+        }
+
+        function rebuildWithDensity() {
+            if (!currentQuote) return;
+            currentDensity = densityRange.value / 100;
+            clearGroup();
+            const authorName = currentQuote.a || "Unknown";
+            createTextPlexus(authorName);
+        }
+
+        // Init
+        window.addEventListener('resize', onResize);
+        langBtn.addEventListener('click', toggleLang);
+        nextBtn.addEventListener('click', loadQuote);
+        pauseBtn.addEventListener('click', togglePause);
+        colorBtn.addEventListener('click', randomizeColor);
+        sizeRange.addEventListener('input', updateScale);
+        densityRange.addEventListener('input', rebuildWithDensity);
+        pointSizeRange.addEventListener('input', () => {
+            currentPointSize = parseInt(pointSizeRange.value);
+            updateMaterials();
+        });
+        lineOpacityRange.addEventListener('input', () => {
+            currentLineOpacity = lineOpacityRange.value / 100;
+            updateMaterials();
+        });
+
+        setTimeout(() => {
+            initThree();
+            loadQuote();
+            lucide.createIcons();
+        }, 100);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinematic - Quote Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Serif+KR:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Serif KR', serif;
+            background-color: #000;
+            color: #fff;
+        }
+
+        .font-eng {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .text-shadow {
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body x-data="quoteApp()" x-init="initApp()" class="h-screen w-full overflow-hidden relative">
+
+    <!-- Background Image -->
+    <div class="absolute inset-0 z-0">
+        <div class="absolute inset-0 bg-black/60 z-10"></div>
+        <!-- 이미지가 없으면 Unsplash 랜덤 이미지 사용 (Nature, Abstract, Architecture 키워드) -->
+        <img x-ref="bgImage" :src="getBgImage()"
+            class="w-full h-full object-cover grayscale opacity-60 scale-110 transition-transform duration-[20s]"
+            alt="Background">
+    </div>
+
+    <!-- Header -->
+    <header class="absolute top-0 left-0 w-full z-20 p-8 flex justify-between items-center text-white/50">
+        <a href="index.html" class="hover:text-white transition-colors text-xs tracking-[0.2em] uppercase">← Back</a>
+
+        <!-- Deep Toggle Switch -->
+        <button @click="toggleLang()" class="group flex items-center gap-3 hover:text-white transition-colors">
+            <span class="text-xs tracking-widest uppercase"
+                :class="lang === 'ko' ? 'text-white' : 'text-white/30'">KOR</span>
+            <div class="w-8 h-4 rounded-full border border-white/30 relative flex items-center px-1">
+                <div class="w-2 h-2 bg-white rounded-full shadow-lg transition-all duration-300"
+                    :class="lang === 'en' ? 'translate-x-[14px]' : 'translate-x-0'"></div>
+            </div>
+            <span class="text-xs tracking-widest uppercase"
+                :class="lang === 'en' ? 'text-white font-bold' : 'text-white/30'">ENG</span>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-10 h-full flex flex-col items-center justify-center px-6 text-center">
+
+        <div x-show="!loading" class="max-w-4xl" style="display: none;"
+            x-transition:enter="transition ease-out duration-1000" x-transition:enter-start="opacity-0 translate-y-10"
+            x-transition:enter-end="opacity-100 translate-y-0">
+
+            <!-- Quote Mark -->
+            <div class="text-6xl text-white/20 font-eng italic mb-8">“</div>
+
+            <!-- Primary Text -->
+            <h1 class="text-3xl md:text-5xl lg:text-6xl font-medium mb-8 text-shadow"
+                style="line-height: 1.4 !important;" :class="lang === 'en' ? 'font-eng' : ''">
+                <span x-text="getMainText()"></span>
+            </h1>
+
+            <!-- Secondary Text -->
+            <p class="text-lg md:text-xl text-white/60 font-light mb-12 italic tracking-wide"
+                :class="lang === 'ko' ? 'font-eng' : ''">
+                <span x-text="getSubText()"></span>
+            </p>
+
+            <!-- Author Info -->
+            <div class="flex flex-col items-center gap-2">
+                <div class="w-12 h-[1px] bg-white/40 mb-4"></div>
+                <p class="text-xl tracking-[0.2em] uppercase font-bold text-shadow"
+                    :class="lang === 'en' ? 'font-eng' : ''">
+                    <span x-text="getMainAuthor()"></span>
+                </p>
+                <p class="text-sm text-white/50 uppercase tracking-widest mt-2"
+                    :class="lang === 'ko' ? 'font-eng' : ''">
+                    <span x-text="getSubAuthor()"></span>
+                </p>
+                <!-- 저자 이미지가 없을 때만 표시되는 작은 텍스트 -->
+                <p x-show="!currentQuote?.author_image"
+                    class="text-[10px] text-white/30 uppercase tracking-[0.3em] mt-2">
+                    Visual by Unsplash
+                </p>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Next Button -->
+    <button @click="loadQuote()" class="absolute bottom-12 right-12 z-20 group">
+        <div
+            class="flex flex-col items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
+            <span class="text-[10px] tracking-[0.3em] uppercase">Next Story</span>
+            <div class="w-[1px] h-12 bg-white/30 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-full bg-white animate-movedown"></div>
+            </div>
+        </div>
+    </button>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('quoteApp', () => ({
+                loading: true,
+                currentQuote: null,
+                lang: 'ko',
+                randomBg: '',
+
+                async initApp() {
+                    const savedLang = localStorage.getItem('quote_lang');
+                    if (savedLang) this.lang = savedLang;
+                    await this.loadQuote();
+                },
+
+                getBgImage() {
+                    if (this.currentQuote?.author_image) {
+                        return this.currentQuote.author_image;
+                    }
+                    // 이미지가 없으면 저장된 랜덤 이미지 사용
+                    return this.randomBg || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000';
+                },
+
+                async loadQuote() {
+                    this.loading = true;
+                    // GSAP Exit
+                    if (this.currentQuote) {
+                        gsap.to("main > div", { opacity: 0, y: -20, duration: 0.5 });
+                    }
+
+                    // 랜덤 이미지 미리 로드 (깜빡임 방지)
+                    this.randomBg = `https://picsum.photos/1920/1080?grayscale&blur=2&random=${Math.random()}`;
+
+                    try {
+                        const res = await fetch('api.php');
+                        this.currentQuote = await res.json();
+
+                        // Background Reset Effect
+                        const bgImg = this.$refs.bgImage;
+                        if (bgImg) {
+                            bgImg.style.transition = 'none';
+                            bgImg.style.transform = 'scale(1.1)';
+                            setTimeout(() => {
+                                bgImg.style.transition = 'transform 20s ease-out';
+                                bgImg.style.transform = 'scale(1.0)';
+                            }, 50);
+                        }
+
+                        setTimeout(() => {
+                            this.loading = false;
+                            // GSAP Enter
+                            gsap.fromTo("main > div",
+                                { opacity: 0, y: 30 },
+                                { opacity: 1, y: 0, duration: 1.2, ease: "power3.out" }
+                            );
+                        }, 300);
+
+                    } catch (e) { console.error(e); }
+                },
+
+                toggleLang() {
+                    this.lang = this.lang === 'ko' ? 'en' : 'ko';
+                    localStorage.setItem('quote_lang', this.lang);
+                },
+
+                getMainText() {
+                    return this.lang === 'ko' ? (this.currentQuote?.ko_q || this.currentQuote?.q) : this.currentQuote?.q;
+                },
+                getSubText() {
+                    return this.lang === 'ko' ? this.currentQuote?.q : (this.currentQuote?.ko_q || "");
+                },
+                getMainAuthor() {
+                    return this.lang === 'ko' ? (this.currentQuote?.author_ko || this.currentQuote?.a) : this.currentQuote?.a;
+                },
+                getSubAuthor() {
+                    return this.lang === 'ko' ? this.currentQuote?.a : (this.currentQuote?.author_ko || "");
+                }
+            }))
+        });
+    </script>
+    <style>
+        @keyframes movedown {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        .animate-movedown {
+            animation: movedown 2s cubic-bezier(0.85, 0, 0.15, 1) infinite;
+        }
+    </style>
+</body>
+
+</html>

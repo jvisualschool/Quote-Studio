@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quote Studio Collection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Pretendard:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+
+        .font-serif {
+            font-family: 'Italiana', serif;
+        }
+
+        .preview-bg {
+            transition: opacity 0.5s ease;
+        }
+
+        /* Modal Styles */
+        #splash-modal {
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        #splash-modal.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.95);
+        }
+
+        .aspect-16-9 {
+            aspect-ratio: 16 / 9;
+        }
+
+        .glass-dark {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen w-full flex flex-col items-center justify-center relative py-20">
+
+    <!-- Background Previews -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <!-- Default Background - Random from Unsplash -->
+        <div id="default-bg" class="absolute inset-0 bg-cover bg-center opacity-60"></div>
+
+        <!-- Hover Backgrounds - Each card has a unique background -->
+        <div id="bg-1" class="preview-bg absolute inset-0 bg-cover bg-center opacity-0"
+            style="background-image: url('https://images.unsplash.com/photo-1478720568477-152d9b164e63?q=80&w=2000&auto=format&fit=crop');">
+        </div>
+        <div id="bg-2" class="preview-bg absolute inset-0 bg-cover bg-center opacity-0"
+            style="background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop');">
+        </div>
+        <div id="bg-3" class="preview-bg absolute inset-0 bg-cover bg-center opacity-0"
+            style="background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2000&auto=format&fit=crop');">
+        </div>
+        <div id="bg-4" class="preview-bg absolute inset-0 bg-cover bg-center opacity-0"
+            style="background-image: url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=2000&auto=format&fit=crop');">
+        </div>
+        <div id="bg-5" class="preview-bg absolute inset-0 bg-cover bg-center opacity-0"
+            style="background-image: url('https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?q=80&w=2000&auto=format&fit=crop');">
+        </div>
+
+        <!-- Lighter Overlay -->
+        <div class="absolute inset-0 bg-black/60"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10 w-full max-w-7xl px-6 flex flex-col items-center">
+
+        <!-- Top Bar (Language + Info) -->
+        <div class="mb-8 flex items-center gap-4">
+            <!-- Language Toggle -->
+            <div class="glass-panel rounded-full p-1 flex"
+                style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                <button onclick="setLang('ko')" id="lang-ko"
+                    class="px-5 py-2 rounded-full text-xs font-bold transition-all bg-white/20 text-white">
+                    한국어
+                </button>
+                <button onclick="setLang('en')" id="lang-en"
+                    class="px-5 py-2 rounded-full text-xs font-bold transition-all text-white/40">
+                    English
+                </button>
+            </div>
+
+            <!-- Info Trigger -->
+            <button onclick="openModal()"
+                class="w-10 h-10 rounded-full flex items-center justify-center glass-panel hover:bg-white/10 transition-all border border-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="text-white/60">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 16v-4"></path>
+                    <path d="M12 8h.01"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-16">
+            <p class="text-sm tracking-[0.5em] text-orange-500 mb-4 font-bold" data-i18n="subtitle">WEB EXPERIENCE</p>
+            <h1 onclick="openModal()"
+                class="text-6xl md:text-8xl font-serif text-white mb-6 tracking-tight cursor-pointer hover:text-orange-500 transition-colors"
+                data-i18n="title">Quote Studio
+            </h1>
+            <p class="text-gray-400 font-light tracking-wide text-lg" data-i18n="description">Five distinct ways to
+                experience wisdom.</p>
+        </div>
+
+        <!-- Navigation Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 w-full">
+
+            <!-- Card 1 -->
+            <a href="design1.html"
+                class="group relative block p-8 rounded-2xl border border-white/20 bg-gray-900 shadow-2xl hover:border-orange-500 hover:scale-105 transition-all duration-300"
+                onmouseenter="showBg(1)" onmouseleave="hideBg(1)">
+                <div class="flex justify-between items-start mb-6">
+                    <span class="text-sm font-bold text-gray-500 group-hover:text-white">01</span>
+                    <div class="w-2 h-2 rounded-full bg-gray-600 group-hover:bg-orange-500 transition-colors"></div>
+                </div>
+                <h2 class="text-2xl font-serif text-white mb-4 group-hover:text-orange-400" data-i18n="card1-title">
+                    Cinematic</h2>
+                <div class="h-px w-full bg-gradient-to-r from-white/20 to-transparent mb-4"></div>
+                <p class="text-xs text-gray-400 leading-relaxed" data-i18n="card1-desc">
+                    Full-screen immersive background with movie-like typography.
+                </p>
+            </a>
+
+            <!-- Card 2 -->
+            <a href="design2.html"
+                class="group relative block p-8 rounded-2xl border border-white/20 bg-gray-900 shadow-2xl hover:border-purple-500 hover:scale-105 transition-all duration-300"
+                onmouseenter="showBg(2)" onmouseleave="hideBg(2)">
+                <div class="flex justify-between items-start mb-6">
+                    <span class="text-sm font-bold text-gray-500 group-hover:text-white">02</span>
+                    <div class="w-2 h-2 rounded-full bg-gray-600 group-hover:bg-purple-500 transition-colors"></div>
+                </div>
+                <h2 class="text-2xl font-serif text-white mb-4 group-hover:text-purple-400" data-i18n="card2-title">
+                    Glassmorphism</h2>
+                <div class="h-px w-full bg-gradient-to-r from-white/20 to-transparent mb-4"></div>
+                <p class="text-xs text-gray-400 leading-relaxed" data-i18n="card2-desc">
+                    Cyberpunk neon lights with modern frosted glass effect.
+                </p>
+            </a>
+
+            <!-- Card 3 -->
+            <a href="design3.html"
+                class="group relative block p-8 rounded-2xl border border-white/20 bg-gray-900 shadow-2xl hover:border-blue-500 hover:scale-105 transition-all duration-300"
+                onmouseenter="showBg(3)" onmouseleave="hideBg(3)">
+                <div class="flex justify-between items-start mb-6">
+                    <span class="text-sm font-bold text-gray-500 group-hover:text-white">03</span>
+                    <div class="w-2 h-2 rounded-full bg-gray-600 group-hover:bg-blue-500 transition-colors"></div>
+                </div>
+                <h2 class="text-2xl font-serif text-white mb-4 group-hover:text-blue-400" data-i18n="card3-title">
+                    Editorial</h2>
+                <div class="h-px w-full bg-gradient-to-r from-white/20 to-transparent mb-4"></div>
+                <p class="text-xs text-gray-400 leading-relaxed" data-i18n="card3-desc">
+                    Clean magazine layout with bold typography and texture.
+                </p>
+            </a>
+
+            <!-- Card 4 -->
+            <a href="design4.html"
+                class="group relative block p-8 rounded-2xl border border-white/20 bg-gray-900 shadow-2xl hover:border-green-500 hover:scale-105 transition-all duration-300"
+                onmouseenter="showBg(4)" onmouseleave="hideBg(4)">
+                <div class="flex justify-between items-start mb-6">
+                    <span class="text-sm font-bold text-gray-500 group-hover:text-white">04</span>
+                    <div class="w-2 h-2 rounded-full bg-gray-600 group-hover:bg-green-500 transition-colors"></div>
+                </div>
+                <h2 class="text-2xl font-mono text-white mb-4 group-hover:text-green-400" data-i18n="card4-title">ASCII
+                    Mode</h2>
+                <div class="h-px w-full bg-gradient-to-r from-white/20 to-transparent mb-4"></div>
+                <p class="text-xs text-gray-400 leading-relaxed" data-i18n="card4-desc">
+                    Digital art generated from text. The Matrix style.
+                </p>
+            </a>
+
+            <!-- Card 5 -->
+            <a href="design5.html"
+                class="group relative block p-8 rounded-2xl border border-white/20 bg-gray-900 shadow-2xl hover:border-cyan-500 hover:scale-105 transition-all duration-300"
+                onmouseenter="showBg(5)" onmouseleave="hideBg(5)">
+                <div class="flex justify-between items-start mb-6">
+                    <span class="text-sm font-bold text-gray-500 group-hover:text-white">05</span>
+                    <div class="w-2 h-2 rounded-full bg-gray-600 group-hover:bg-cyan-500 transition-colors"></div>
+                </div>
+                <h2 class="text-2xl font-serif text-white mb-4 group-hover:text-cyan-400" data-i18n="card5-title">Plexus
+                    3D</h2>
+                <div class="h-px w-full bg-gradient-to-r from-white/20 to-transparent mb-4"></div>
+                <p class="text-xs text-gray-400 leading-relaxed" data-i18n="card5-desc">
+                    Interactive Three.js particle network with author names.
+                </p>
+            </a>
+
+        </div>
+
+        <!-- Footer -->
+        <footer
+            class="mt-24 w-full border-t border-white/10 pt-12 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
+            <div class="space-y-2">
+                <p class="text-xs tracking-[0.3em] text-white/40 uppercase font-bold" data-i18n="footer-tech-title">
+                    Technology Stack</p>
+                <p class="text-sm text-white/60 font-medium">
+                    <a href="https://threejs.org/" target="_blank"
+                        class="hover:text-white transition-colors">Three.js</a> ·
+                    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API" target="_blank"
+                        class="hover:text-white transition-colors">HTML5 Canvas</a> ·
+                    <a href="https://tailwindcss.com/" target="_blank"
+                        class="hover:text-white transition-colors">TailwindCSS</a> ·
+                    <a href="https://www.php.net/" target="_blank" class="hover:text-white transition-colors">PHP</a> ·
+                    <a href="https://www.mysql.com/" target="_blank"
+                        class="hover:text-white transition-colors">MySQL</a>
+                </p>
+            </div>
+            <div class="flex flex-col items-center md:items-end space-y-2">
+                <p class="text-xs tracking-[0.3em] text-white/40 uppercase font-bold" data-i18n="footer-dev-title">
+                    Developed By</p>
+                <div class="flex items-center gap-4">
+                    <a href="https://jvibeschool.com/" target="_blank"
+                        class="text-sm text-white/80 font-bold hover:text-orange-500 transition-colors">Jinho Jung</a>
+                    <span class="w-px h-4 bg-white/20"></span>
+                    <span class="text-sm text-orange-500 font-bold">2026.1</span>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Splash Modal -->
+    <div id="splash-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 hidden">
+        <div
+            class="relative w-full max-w-4xl glass-dark rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-500">
+            <!-- 16:9 Image Container -->
+            <div class="w-full aspect-16-9 relative overflow-hidden bg-black">
+                <img src="splash.jpg" alt="Splash" class="w-full h-full object-cover">
+
+                <!-- Close Button -->
+                <button onclick="closeModal()"
+                    class="absolute top-6 right-6 p-2 rounded-full bg-black/50 text-white hover:bg-white/20 transition-all border border-white/10 z-20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg>
+                </button>
+
+                <!-- Witty Floating Badge -->
+                <div
+                    class="absolute top-6 left-6 px-4 py-1.5 rounded-full bg-orange-500/90 text-white text-[10px] font-black uppercase tracking-widest animate-pulse">
+                    Caution: Wisdom Overload
+                </div>
+
+                <!-- Text Content Over Image (Removed as per user request) -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div
+                class="p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-8 border-t border-white/10 bg-black/60">
+                <div class="flex flex-col md:flex-row gap-8 md:gap-12 text-left w-full md:w-auto">
+                    <div class="space-y-1">
+                        <p class="text-[10px] tracking-[0.2em] text-white/40 uppercase font-bold"
+                            data-i18n="footer-tech-title">
+                            Technology Stack</p>
+                        <p class="text-xs text-white/60 font-medium">
+                            <a href="https://threejs.org/" target="_blank"
+                                class="hover:text-white transition-colors">Three.js</a> ·
+                            <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API" target="_blank"
+                                class="hover:text-white transition-colors">HTML5 Canvas</a> ·
+                            <a href="https://tailwindcss.com/" target="_blank"
+                                class="hover:text-white transition-colors">TailwindCSS</a> ·
+                            <a href="https://www.php.net/" target="_blank"
+                                class="hover:text-white transition-colors">PHP</a> ·
+                            <a href="https://www.mysql.com/" target="_blank"
+                                class="hover:text-white transition-colors">MySQL</a>
+                        </p>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-[10px] tracking-[0.2em] text-white/40 uppercase font-bold"
+                            data-i18n="footer-dev-title">
+                            Developed By</p>
+                        <div class="flex items-center gap-3">
+                            <a href="https://jvibeschool.com/" target="_blank"
+                                class="text-xs text-white/80 font-bold hover:text-orange-500 transition-colors">Jinho
+                                Jung</a>
+                            <span class="w-px h-3 bg-white/20"></span>
+                            <span class="text-xs text-orange-500 font-bold">2026.1</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="closeModal()"
+                    class="w-full md:w-auto px-8 py-3 rounded-full bg-white text-black font-bold text-sm hover:bg-orange-500 hover:text-white transition-all transform hover:scale-105 shrink-0">
+                    영감을 얻을 준비가 되었습니다
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script for Background Switch and Random Unsplash -->
+    <script>
+        // Translation data
+        const translations = {
+            ko: {
+                subtitle: '명언 공방',
+                title: 'Quote Studio',
+                description: '지혜를 경험하는 다섯 가지 방법',
+                'card1-title': '시네마틱',
+                'card1-desc': '영화 같은 타이포그래피와 전체 화면 몰입형 배경',
+                'card2-title': '글래스모피즘',
+                'card2-desc': '사이버펑크 네온 조명과 현대적인 유리 효과',
+                'card3-title': '에디토리얼',
+                'card3-desc': '대담한 타이포그래피와 질감이 있는 깔끔한 매거진 레이아웃',
+                'card4-title': 'ASCII 모드',
+                'card4-desc': '텍스트로 생성된 디지털 아트. 매트릭스 스타일',
+                'card5-title': 'Plexus 3D',
+                'card5-desc': '저자 이름으로 만든 인터랙티브 Three.js 파티클 네트워크',
+                'footer-tech-title': '사용 기술 스택',
+                'footer-dev-title': '개발자',
+                'modal-welcome': '명언 공방에 오신 것을 환영합니다',
+                'modal-title': '생각의 깊이를 더하는<br>가장 힙한 명언 공간',
+                'modal-desc': '주의: 이곳의 명언들은 갑작스러운 깨달음과 삶의 변화를 일으킬 수 있습니다. 부작용으로 철학적인 고민이 깊어질 수 있으니 적정량을 섭취하세요.',
+                'modal-btn': '영감을 얻을 준비가 되었습니다'
+            },
+            en: {
+                subtitle: 'WEB EXPERIENCE',
+                title: 'Quote Studio',
+                description: 'Five distinct ways to experience wisdom.',
+                'card1-title': 'Cinematic',
+                'card1-desc': 'Full-screen immersive background with movie-like typography.',
+                'card2-title': 'Glassmorphism',
+                'card2-desc': 'Cyberpunk neon lights with modern frosted glass effect.',
+                'card3-title': 'Editorial',
+                'card3-desc': 'Clean magazine layout with bold typography and texture.',
+                'card4-title': 'ASCII Mode',
+                'card4-desc': 'Digital art generated from text. The Matrix style.',
+                'card5-title': 'Plexus 3D',
+                'card5-desc': 'Interactive Three.js particle network with author names.',
+                'footer-tech-title': 'Technology Stack',
+                'footer-dev-title': 'Developed By',
+                'modal-welcome': 'Welcome to Quote Studio',
+                'modal-title': 'The hippest space for<br>deepening your thoughts',
+                'modal-desc': 'Caution: Quotes here may cause sudden enlightenment and life changes. Excessive dosage may lead to philosophical thinking. Consume responsibly.',
+                'modal-btn': "I'm ready for inspiration"
+            }
+        };
+
+        let currentLang = 'ko';
+
+        function openModal() {
+            const modal = document.getElementById('splash-modal');
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('splash-modal');
+            modal.classList.add('hidden');
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Show modal on first visit (optional, but requested cool modal)
+        // For now, let's keep it manual through the info button or uncomment below for auto-show
+        // window.onload = () => { setTimeout(openModal, 1000); };
+
+        // Set language and update UI
+        function setLang(lang) {
+            currentLang = lang;
+
+            // Update button states
+            document.getElementById('lang-ko').className = lang === 'ko'
+                ? 'px-5 py-2 rounded-full text-xs font-bold transition-all bg-white/20 text-white'
+                : 'px-5 py-2 rounded-full text-xs font-bold transition-all text-white/40';
+
+            document.getElementById('lang-en').className = lang === 'en'
+                ? 'px-5 py-2 rounded-full text-xs font-bold transition-all bg-white/20 text-white'
+                : 'px-5 py-2 rounded-full text-xs font-bold transition-all text-white/40';
+
+            // Update all translatable elements
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    element.textContent = translations[lang][key];
+                }
+            });
+        }
+
+        // Array of beautiful Unsplash background images
+        const backgrounds = [
+            'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?q=80&w=2000&auto=format&fit=crop', // Space/stars
+            'https://images.unsplash.com/photo-1464802686167-b939a6910659?q=80&w=2000&auto=format&fit=crop', // Mountain sunset
+            'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2000&auto=format&fit=crop', // Mountain landscape
+            'https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?q=80&w=2000&auto=format&fit=crop', // Ocean sunset
+            'https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=2000&auto=format&fit=crop', // Starry sky
+            'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2000&auto=format&fit=crop', // Forest path
+            'https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=2000&auto=format&fit=crop', // Nature landscape
+            'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=2000&auto=format&fit=crop', // Misty mountains
+            'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2000&auto=format&fit=crop', // Mountain peaks
+            'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=2000&auto=format&fit=crop', // Northern lights
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2000&auto=format&fit=crop', // Beach sunset
+            'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=2000&auto=format&fit=crop', // Colorful sky
+        ];
+
+        // Load random background on page load
+        function loadRandomBackground() {
+            const randomIndex = Math.floor(Math.random() * backgrounds.length);
+            const randomBg = document.getElementById('default-bg');
+            randomBg.style.backgroundImage = `url('${backgrounds[randomIndex]}')`;
+        }
+
+        function showBg(id) {
+            document.querySelectorAll('.preview-bg').forEach(bg => bg.style.opacity = '0');
+            const target = document.getElementById('bg-' + id);
+            if (target) target.style.opacity = '1';
+        }
+
+        function hideBg(id) {
+            document.querySelectorAll('.preview-bg').forEach(bg => bg.style.opacity = '0');
+        }
+
+        // Initialize on page load
+        loadRandomBackground();
+        setLang('ko'); // Set default language to Korean
+    </script>
+</body>
+
+</html>

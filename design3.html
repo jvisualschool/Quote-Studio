@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editorial - Quote Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Ridibatang';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.0/RIDIBatang.woff') format('woff');
+            font-weight: normal;
+            font-display: swap;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f1ea;
+            color: #1a1a1a;
+        }
+
+        .font-serif {
+            font-family: 'Italiana', serif;
+        }
+
+        .font-ridi {
+            font-family: 'Ridibatang', serif;
+        }
+
+        .noise-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+    </style>
+</head>
+
+<body x-data="quoteApp()" x-init="initApp()"
+    class="min-h-screen w-full relative overflow-hidden flex flex-col justify-between p-6 md:p-12 transition-colors duration-700">
+
+    <div class="noise-bg"></div>
+
+    <!-- Navigation -->
+    <nav class="flex justify-between items-start z-20">
+        <a href="index.html"
+            class="text-xs font-bold tracking-[0.2em] uppercase border-b border-black pb-1 hover:border-transparent transition-all">Back
+            to Collection</a>
+
+        <div class="flex flex-col items-end gap-2">
+            <span class="text-[10px] uppercase tracking-widest text-gray-400">Language</span>
+            <button @click="toggleLang()"
+                class="text-sm font-bold tracking-wider hover:text-orange-600 transition-colors"
+                x-text="lang === 'ko' ? 'KOREAN' : 'ENGLISH'"></button>
+        </div>
+    </nav>
+
+    <!-- Main Content Grid -->
+    <main
+        class="flex-grow flex flex-col md:flex-row items-center justify-center relative mt-10 md:mt-0 max-w-7xl mx-auto w-full">
+
+        <!-- Center Typography -->
+        <div class="w-full md:w-[60%] relative z-10 px-4 md:pr-4">
+            <div x-show="!loading" style="display: none;" x-transition:enter="transition ease-out duration-1000"
+                x-transition:enter-start="opacity-0 translateY(20px)"
+                x-transition:enter-end="opacity-100 translateY(0)">
+
+                <h1 class="text-4xl md:text-5xl lg:text-7xl mb-8 text-gray-900" style="line-height: 1.3 !important;"
+                    :class="lang === 'en' ? 'font-serif' : 'font-ridi'">
+                    <span x-text="getMainText()"></span>
+                </h1>
+
+                <div class="w-20 h-1 bg-orange-600 mb-8"></div>
+
+                <p class="text-lg md:text-xl text-gray-600 font-light leading-relaxed max-w-xl"
+                    :class="lang === 'ko' ? 'font-ridi' : ''">
+                    <span x-text="getSubText()"></span>
+                </p>
+
+            </div>
+        </div>
+
+        <!-- Right Image (FIXED VISIBILITY) -->
+        <div
+            class="w-full md:w-[40%] flex justify-center md:justify-end items-center mt-12 md:mt-0 relative z-10 md:-translate-y-12">
+            <!-- Photo Frame -->
+            <div
+                class="relative w-72 h-96 md:w-[400px] md:h-[550px] bg-white p-3 shadow-2xl transform rotate-3 transition-transform duration-700 hover:rotate-0 hover:scale-105">
+
+                <!-- The Image -->
+                <div class="w-full h-full overflow-hidden bg-gray-200 relative">
+                    <img :src="currentQuote?.author_image || currentQuote?.image_url"
+                        class="w-full h-full object-cover transition-all duration-1000 grayscale hover:grayscale-0"
+                        :class="loading ? 'scale-110 blur-sm' : 'scale-100 blur-0'" alt="Author Portrait">
+
+                    <!-- Fallback if no image -->
+                    <div x-show="!currentQuote?.author_image && !currentQuote?.image_url"
+                        class="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-300">
+                        <span class="text-6xl font-serif" x-text="(currentQuote?.a || 'A').charAt(0)"></span>
+                    </div>
+                </div>
+
+                <!-- Tape Effect -->
+                <div
+                    class="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-white/40 backdrop-blur-sm border border-white/50 rotate-[-2deg] shadow-sm transform">
+                </div>
+
+                <!-- Caption -->
+                <div
+                    class="absolute -bottom-16 -left-4 md:-left-12 bg-white p-6 shadow-xl max-w-xs rotate-[-3deg] z-20 border border-gray-100">
+                    <p class="text-2xl font-serif text-black leading-none mb-2" x-text="getMainAuthor()"></p>
+                    <p class="text-xs text-gray-400 uppercase tracking-widest" x-text="getSubAuthor()"></p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="absolute left-0 bottom-1/4 hidden lg:block">
+            <p class="vertical-text text-xs tracking-[0.3em] text-gray-300 transform rotate-180">QUOTATION STUDIO • 2026
+            </p>
+        </div>
+
+    </main>
+
+    <!-- Footer Controls -->
+    <footer class="w-full flex justify-between items-end z-20 mt-10 md:mt-0">
+        <div class="text-[10px] text-gray-400 max-w-[150px] leading-relaxed hidden md:block">
+            Curated wisdom from history's greatest minds, translated for modern inspiration.
+        </div>
+
+        <button @click="loadQuote()"
+            class="group flex items-center gap-4 bg-black text-white px-8 py-4 rounded-full hover:bg-orange-600 transition-colors duration-300 shadow-lg">
+            <span class="text-sm font-bold tracking-widest uppercase">Next Quote</span>
+            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3">
+                </path>
+            </svg>
+        </button>
+    </footer>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('quoteApp', () => ({
+                loading: true,
+                currentQuote: null,
+                lang: 'ko',
+
+                async initApp() {
+                    const saved = localStorage.getItem('editorial_lang');
+                    if (saved) this.lang = saved;
+                    await this.loadQuote();
+                },
+
+                async loadQuote() {
+                    this.loading = true;
+                    // GSAP Exit
+                    gsap.to("h1, p.text-gray-600, .w-20", { opacity: 0, y: -10, duration: 0.4, stagger: 0.05 });
+
+                    try {
+                        const res = await fetch('api.php');
+                        this.currentQuote = await res.json();
+
+                        setTimeout(() => {
+                            this.loading = false;
+                            // GSAP Enter
+                            gsap.fromTo("h1, .w-20, p.text-gray-600",
+                                { opacity: 0, y: 20 },
+                                { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: "power2.out", delay: 0.2 }
+                            );
+                        }, 500);
+                    } catch (e) { console.error(e); }
+                },
+
+                toggleLang() {
+                    this.lang = this.lang === 'ko' ? 'en' : 'ko';
+                    localStorage.setItem('editorial_lang', this.lang);
+                },
+
+                getMainText() {
+                    return this.lang === 'ko' ? (this.currentQuote?.ko_q || this.currentQuote?.q) : this.currentQuote?.q;
+                },
+                getSubText() {
+                    return this.lang === 'ko' ? this.currentQuote?.q : (this.currentQuote?.ko_q || "");
+                },
+                getMainAuthor() {
+                    return this.lang === 'ko' ? (this.currentQuote?.author_ko || this.currentQuote?.a) : this.currentQuote?.a;
+                },
+                getSubAuthor() {
+                    return this.lang === 'ko' ? this.currentQuote?.a : (this.currentQuote?.author_ko || "");
+                }
+            }))
+        });
+    </script>
+</body>
+
+</html>

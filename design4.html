@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII - Quote Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css');
+
+        body {
+            font-family: 'Wanted Sans', 'Wanted Sans Variable', -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+            font-weight: 500;
+            background-color: #000;
+            color: #22c55e;
+            overflow: hidden;
+        }
+
+        .font-pixel {
+            font-family: 'Wanted Sans', 'Wanted Sans Variable', sans-serif;
+            font-weight: 500;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #052e16;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 0;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4ade80;
+        }
+
+        @keyframes scanline {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        .animate-scanline {
+            animation: scanline 4s linear infinite;
+        }
+    </style>
+</head>
+
+<body x-data="asciiApp()" x-init="initApp()"
+    class="w-full h-screen flex flex-col md:flex-row bg-black selection:bg-green-500 selection:text-black">
+
+    <!-- Section 1: ASCII Visual (50%) -->
+    <div id="asciiContainer"
+        class="relative w-full md:w-1/2 h-1/2 md:h-full bg-black border-b-4 md:border-b-0 md:border-r-4 border-green-900 overflow-hidden flex items-center justify-center">
+
+        <!-- Canvas -->
+        <canvas id="asciiCanvas" class="block w-full h-full object-contain"></canvas>
+
+        <!-- CRT Screen Effects -->
+        <div
+            class="absolute inset-0 pointer-events-none z-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,6px_100%] opacity-20">
+        </div>
+        <div
+            class="absolute inset-0 pointer-events-none z-10 bg-gradient-to-b from-transparent via-green-500/5 to-transparent animate-scanline">
+        </div>
+
+        <!-- Loading Overlay -->
+        <div x-show="loading" class="absolute inset-0 flex items-center justify-center bg-black z-20">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-48 h-2 bg-green-900/30 border border-green-500/50 p-0.5">
+                    <div class="h-full bg-green-500 animate-[width_1s_ease-in-out_infinite]" style="width: 50%"></div>
+                </div>
+                <span class="text-xl font-pixel animate-pulse">GENERATING_MATRIX...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Text & Controls (50%) -->
+    <div class="w-full md:w-1/2 h-1/2 md:h-full flex flex-col relative z-20 bg-gray-950 text-green-500">
+
+        <!-- Top Nav -->
+        <header class="p-4 md:p-6 flex justify-between items-center border-b border-green-900/30 bg-black/50">
+            <a href="index.html"
+                class="group flex items-center gap-2 text-xl font-bold tracking-widest uppercase hover:text-white transition-colors font-pixel">
+                <span class="text-green-500 group-hover:-translate-x-1 transition-transform">&lt;</span>
+                EXIT
+            </a>
+            <button @click="toggleLang()"
+                class="text-xl font-pixel border-2 border-green-700 px-4 py-1 hover:bg-green-600 hover:text-black hover:border-green-500 transition-all uppercase">
+                <span x-text="lang === 'ko' ? 'KR' : 'EN'"></span>
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow flex flex-col justify-center px-6 md:px-12 py-6 overflow-y-auto">
+            <div x-show="!loading" x-transition:enter="transition ease-out duration-500"
+                x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0">
+
+                <!-- Quote Text -->
+                <h1 class="text-3xl md:text-4xl lg:text-5xl tracking-[1.3px] mb-8 break-keep font-pixel text-white"
+                    style="text-shadow: 2px 2px 0px #14532d; line-height: 1.3 !important;">
+                    <span class="text-green-500 mr-2">&gt;</span><span x-text="getMainText()"></span><span
+                        class="animate-pulse">_</span>
+                </h1>
+
+                <!-- Translation -->
+                <div class="text-xl md:text-2xl text-green-400/70 mb-8 border-l-4 border-green-800 pl-4 py-2 font-pixel"
+                    x-show="hasTranslation()">
+                    <span x-text="getSubText()"></span>
+                </div>
+
+                <!-- Author Info -->
+                <div class="flex items-center gap-6 mt-4 p-4 border border-green-900 bg-green-900/10">
+                    <div>
+                        <p class="text-2xl font-pixel text-green-400 uppercase tracking-wider mb-1">
+                            <span x-text="getMainAuthor()"></span>
+                        </p>
+                        <p class="text-sm text-green-700 font-pixel uppercase animate-pulse">
+                            &gt; <span x-text="getSubAuthor()"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Controls -->
+        <footer class="p-4 md:p-6 border-t border-green-900/30 bg-black/50">
+            <button @click="loadQuote()"
+                class="w-full py-4 bg-green-800 text-black font-pixel text-xl hover:bg-green-500 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-[4px_4px_0px_#052e16] hover:shadow-[2px_2px_0px_#052e16]">
+                NEXT
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('asciiApp', () => ({
+                loading: true,
+                currentQuote: null,
+                lang: 'ko',
+                canvas: null,
+                ctx: null,
+                container: null,
+                targetImage: null,
+
+                async initApp() {
+                    this.canvas = document.getElementById('asciiCanvas');
+                    this.container = document.getElementById('asciiContainer');
+                    this.ctx = this.canvas.getContext('2d');
+
+                    let resizeTimeout;
+                    window.addEventListener('resize', () => {
+                        clearTimeout(resizeTimeout);
+                        resizeTimeout = setTimeout(() => {
+                            if (this.targetImage) this.renderAscii();
+                        }, 200);
+                    });
+
+                    await this.loadQuote();
+                },
+
+                toggleLang() {
+                    this.lang = this.lang === 'ko' ? 'en' : 'ko';
+                },
+
+                cleanText(text) {
+                    if (!text) return "";
+                    return text
+                        .replace(/[\u2018\u2019]/g, "'") // Smart single quotes
+                        .replace(/[\u201C\u201D]/g, '"') // Smart double quotes
+                        .replace(/\uFFFD/g, "'");        // Replacement character (fix for Sky's)
+                },
+
+                getMainText() {
+                    const text = this.lang === 'ko' ? (this.currentQuote?.ko_q || this.currentQuote?.q) : this.currentQuote?.q;
+                    return this.cleanText(text);
+                },
+                getSubText() {
+                    const text = this.lang === 'ko' ? this.currentQuote?.q : (this.currentQuote?.ko_q || "");
+                    return this.cleanText(text);
+                },
+                hasTranslation() {
+                    return !!this.currentQuote?.ko_q;
+                },
+                getMainAuthor() {
+                    return this.lang === 'ko' ? (this.currentQuote?.author_ko || this.currentQuote?.a) : this.currentQuote?.a;
+                },
+                getSubAuthor() {
+                    return this.lang === 'ko' ? this.currentQuote?.a : (this.currentQuote?.author_ko || "");
+                },
+
+                async loadQuote() {
+                    this.loading = true;
+                    // Reset canvas
+                    if (this.ctx) {
+                        this.ctx.fillStyle = 'black';
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    }
+
+                    try {
+                        const res = await fetch('api.php');
+                        this.currentQuote = await res.json();
+
+                        const imgUrl = this.currentQuote.author_image || this.currentQuote.image_url;
+
+                        if (imgUrl) {
+                            await this.loadImage(imgUrl);
+                        } else {
+                            this.renderFallback();
+                            this.loading = false;
+                        }
+
+                    } catch (e) {
+                        console.error(e);
+                        this.loading = false;
+                    }
+                },
+
+                loadImage(src) {
+                    return new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.crossOrigin = "Anonymous";
+                        img.onload = () => {
+                            this.targetImage = img;
+                            this.renderAscii();
+                            this.loading = false;
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            this.renderFallback();
+                            this.loading = false;
+                            resolve();
+                        };
+                        img.src = src;
+                    });
+                },
+
+                renderFallback() {
+                    const width = this.container.offsetWidth;
+                    const height = this.container.offsetHeight;
+                    this.canvas.width = width;
+                    this.canvas.height = height;
+
+                    const ctx = this.ctx;
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, width, height);
+
+                    ctx.font = `20px 'Wanted Sans'`;
+                    ctx.fillStyle = '#15803d'; // green-700
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText("NO_VISUAL_DATA_FOUND", width / 2, height / 2);
+                },
+
+                renderAscii() {
+                    if (!this.targetImage) return;
+
+                    const width = this.container.offsetWidth;
+                    const height = this.container.offsetHeight;
+
+                    this.canvas.width = width;
+                    this.canvas.height = height;
+
+                    const ctx = this.ctx;
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, width, height);
+
+                    // --- ASCII Logic (Canvas Based) ---
+
+                    // Lower Density Configuration (Readable)
+                    const isSmallScreen = width < 600;
+                    // Slightly smaller for more detail (User Request: -10%)
+                    const fontSize = isSmallScreen ? 8 : 12.5;
+                    const fontRatio = 0.6;
+                    // Relaxed line height factor (1.0 - 1.2 is good)
+                    const lineHeight = fontSize * 1.1;
+
+                    const cols = Math.floor(width / (fontSize * fontRatio));
+                    const rows = Math.floor(height / lineHeight);
+
+                    // Temp canvas for image processing
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = cols;
+                    tempCanvas.height = rows;
+                    const tempCtx = tempCanvas.getContext('2d');
+
+                    // Image fit (Cover)
+                    const imgRatio = this.targetImage.width / this.targetImage.height;
+                    const screenRatio = width / height;
+
+                    let drawW, drawH, offX, offY;
+
+                    if (imgRatio > screenRatio) {
+                        drawH = rows;
+                        // Adjust width scale based on font/line ratio to maintain aspect
+                        drawW = rows * imgRatio / fontRatio * (lineHeight / fontSize);
+                        offY = 0;
+                        offX = (cols - drawW) / 2;
+                    } else {
+                        drawW = cols;
+                        drawH = cols / imgRatio * fontRatio / (lineHeight / fontSize);
+                        offX = 0;
+                        offY = (rows - drawH) / 2;
+                    }
+
+                    tempCtx.drawImage(this.targetImage, offX, offY, drawW, drawH);
+                    const imageData = tempCtx.getImageData(0, 0, cols, rows).data;
+
+                    // Text setting
+                    ctx.font = `bold ${fontSize}px "DM Mono", monospace`;
+                    ctx.textBaseline = 'middle';
+                    ctx.textAlign = 'center';
+
+                    const quoteStr = (this.currentQuote.q || "MATRIX").replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    let charIndex = 0;
+
+                    for (let y = 0; y < rows; y++) {
+                        for (let x = 0; x < cols; x++) {
+                            const i = (y * cols + x) * 4;
+                            const r = imageData[i];
+                            const g = imageData[i + 1];
+                            const b = imageData[i + 2];
+
+                            // Grayscale brightness
+                            let brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+
+                            // High threshold to reduce noise (cleaner background)
+                            if (brightness < 40) continue;
+
+                            const char = quoteStr[charIndex % quoteStr.length];
+                            charIndex++;
+
+                            // Alpha based on brightness
+                            const alpha = brightness / 255;
+
+                            // Matrix Green Colors
+                            if (brightness > 200) {
+                                ctx.fillStyle = `rgba(220, 255, 220, ${alpha})`; // Brightest
+                            } else if (brightness > 100) {
+                                ctx.fillStyle = `rgba(74, 222, 128, ${alpha})`; // Green
+                            } else {
+                                ctx.fillStyle = `rgba(34, 197, 94, ${alpha})`; // Darker Green
+                            }
+
+                            // Draw centered
+                            const posX = (x * (fontSize * fontRatio)) + ((fontSize * fontRatio) / 2);
+                            const posY = (y * lineHeight) + (lineHeight / 2);
+
+                            ctx.fillText(char, posX, posY);
+                        }
+                    }
+                }
+            }))
+        });
+    </script>
+</body>
+
+</html>
